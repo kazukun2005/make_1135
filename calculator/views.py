@@ -530,7 +530,7 @@ def all_main(n, max_n=10**12):
     c = solve_arithmetic_expression(ll)
     print(f"Evaluated result for {num}: {c} ok")
     return ll
-use_number = 114514
+use_number = 1135
 make_seive(use_number)
 
 def index_view(request):
