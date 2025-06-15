@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1135計算機</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --container-bg-color: #ffffff;
+            --text-color: #333;
+            --primary-color: #007bff;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        body.fullscreen-active {
+            overflow: hidden;
+        }
+
+        .main-container {
+            background-color: var(--container-bg-color);
+            padding: 2em 5%;
+            min-height: 100vh;
+            box-sizing: border-box;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, .description {
+            text-align: center;
+        }
+        h1 { color: var(--primary-color); margin-top: 0; }
+        .description { line-height: 1.6; }
+
+        form { margin: 2em 0; padding: 0; }
+        input[type="number"] {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            padding: 0.8em;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.25);
+        }
+
+        #result-display {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            
+            /* ▼▼▼ ここの値を変更しました ▼▼▼ */
+            min-height: 150px; /* 最小の高さを大きくして、常に縦長に */
+            max-height: 400px; /* 最大の高さも大きくして、より多くの内容を表示可能に */
+            
+            overflow: auto;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #result-display:hover {
+            background-color: #e9ecef;
+        }
+        #result-display p {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            animation: fadeIn 0.5s ease-in-out;
+            word-wrap: break-word;
+        }
+        
+        /************************************************************/
+        /* --- フルスクリーン表示用のオーバーレイ --- */
+        /************************************************************/
+        #fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+            padding: 2em;
+            box-sizing: border-box;
+        }
+
+        body.fullscreen-active #fullscreen-overlay {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        #fullscreen-content {
+            color: white;
+            font-size: 3vw;
+            font-weight: bold;
+            text-align: center;
+            overflow: auto;
+            max-height: 100%;
+            word-wrap: break-word;
+        }
+        
+        #fullscreen-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 3em;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>1135計算機</h1>
+        <p class="description">下のボックスに数字を入力してください。</p>
+
+        <form>
+            {% csrf_token %}
+            <input 
+                type="number" 
+                name="number_input" 
+                placeholder="0"
+                hx-post="{% url 'calculate' %}"
+                hx-trigger="keyup changed"
+                hx-target="#result-display"
+                hx-swap="innerHTML"
+            >
+        </form>
+
+        <div id="result-display" onclick="showFullscreen()">
+            <p>計算結果：0</p>
+        </div>
+    </div>
+
+    <div id="fullscreen-overlay" onclick="hideFullscreen()">
+        <button id="fullscreen-close" type="button">&times;</button>
+        <div id="fullscreen-content" onclick="event.stopPropagation()">
+        </div>
+    </div>
+
+
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+
+    <script>
+        function showFullscreen() {
+            const resultElement = document.querySelector('#result-display p');
+            if (resultElement) {
+                const resultText = resultElement.textContent;
+                const fullscreenContent = document.getElementById('fullscreen-content');
+                fullscreenContent.textContent = resultText;
+                document.body.classList.add('fullscreen-active');
+            }
+        }
+
+        function hideFullscreen() {
+            document.body.classList.remove('fullscreen-active');
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
